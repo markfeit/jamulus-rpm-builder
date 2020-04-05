@@ -1,0 +1,94 @@
+#
+# RPM Spec for Jamulus
+#
+
+
+
+Name:     jamulus
+Version:  __VERSION__
+Release:  1%{?dist}
+Summary:  Online Jam Software
+License:  GPL
+URL:      https://github.com/corrados/jamulus/wiki
+
+%define namever %{name}-%{version}
+%define tarball %{namever}.tar.gz
+
+%define version_under $(echo __VERSION__ | tr . _)
+
+
+Source0: %{tarball}
+
+
+BuildRequires: qt5-devel
+BuildRequires: jack-audio-connection-kit-devel
+
+Requires: qt5
+Requires: jack-audio-connection-kit
+
+
+
+
+%description
+The Jamulus software enables musicians to perform real-time jam
+sessions over the internet. There is one server running the Jamulus
+server software which collects the audio data from each Jamulus
+client, mixes the audio data and sends the mix back to each client.
+
+
+%prep
+tar xzf ${RPM_SOURCE_DIR}/%{tarball}
+mv jamulus-r%{version_under} jamulus-%{version}
+ls
+
+
+
+
+%build
+cd %{namever}
+qmake-qt5 Jamulus.pro
+%{__make} clean
+%{__make}
+
+
+%install
+# Jamulus has no install target, so we have to wing this.
+%{__mkdir_p} "%{buildroot}/%{_bindir}"
+%{__cp} "%{namever}/Jamulus" "%{buildroot}/%{_bindir}/jamulus"
+
+%{__mkdir_p} "%{buildroot}/%{_datarootdir}/licenses/%{name}"
+%{__cp} "%{namever}/COPYING" "%{buildroot}/%{_datarootdir}/licenses/%{name}"
+
+%{__mkdir_p} "%{buildroot}/%{_datadir}/applications"
+%{__cp} "%{namever}/distributions/%{name}.desktop" "%{buildroot}/%{_datadir}/applications"
+
+%{__mkdir_p} "%{buildroot}/%{_datadir}/icons/hicolor/256x256/apps"
+%{__cp} "%{namever}/distributions/%{name}.png" "%{buildroot}/%{_datadir}/icons/hicolor/256x256/apps"
+
+
+
+%post
+touch --no-create %{_datadir}/icons/hicolor &>/dev/null || true
+
+
+
+%postun
+update-desktop-database &> /dev/null || true
+if [ $1 -eq 0 ] ; then
+    touch --no-create %{_datadir}/icons/hicolor &>/dev/null
+    gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || true
+fi
+
+
+
+%posttrans
+gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || true
+
+
+
+%files
+%license %{_datarootdir}/licenses/%{name}/COPYING
+%{_bindir}/*
+%{_datadir}/applications/*
+%{_datadir}/icons/hicolor/*/apps/*
+
